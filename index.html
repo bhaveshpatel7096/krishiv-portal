@@ -86,15 +86,10 @@
     </div>
 
     <div id="appView" class="hidden">
-        <div id="ownerTabs" class="nav-tabs hidden">
-            <button id="ownerLocBtn0" class="tab-btn" onclick="switchLocation('teriyaki')">Whitehall</button>
-            <button id="ownerLocBtn1" class="tab-btn" onclick="switchLocation('cherry')">Cherry Hill</button>
-            <button id="ownerLocBtn2" class="tab-btn" onclick="switchLocation('philly')">Philly</button>
-        </div>
-
-        <div id="sunriseTabs" class="nav-tabs hidden">
-            <button id="sunLocBtn1" class="tab-btn" onclick="switchLocation('cherry')">Cherry Hill</button>
-            <button id="sunLocBtn2" class="tab-btn" onclick="switchLocation('philly')">Philly</button>
+        <div id="locationSelectorWrapper" class="nav-tabs hidden">
+            <button id="locBtn0" class="tab-btn active" onclick="switchLocation('teriyaki')">Whitehall</button>
+            <button id="locBtn1" class="tab-btn" onclick="switchLocation('cherry')">Cherry Hill</button>
+            <button id="locBtn2" class="tab-btn" onclick="switchLocation('philly')">Philly</button>
         </div>
 
         <div class="card">
@@ -242,12 +237,15 @@
     function checkPin() {
         if(currentPin === '2545') {
             loggedInRole = 'owner';
+            currentActiveLoc = 'teriyaki';
             setupPortal();
         } else if(currentPin === '6965') {
             loggedInRole = 'teriyaki';
+            currentActiveLoc = 'teriyaki';
             setupPortal();
         } else if(currentPin === '1200') {
             loggedInRole = 'sunrise';
+            currentActiveLoc = 'cherry'; 
             setupPortal();
         } else {
             alert('Invalid PIN Code. Please try again.');
@@ -260,50 +258,30 @@
         document.getElementById('appView').classList.remove('hidden');
         document.getElementById('logoutBtn').classList.remove('hidden');
 
-        // SECURITY LEVEL CHECKING ON LOGIN
         if(loggedInRole === 'owner') {
             document.getElementById('ownerSection').classList.remove('hidden');
-            document.getElementById('ownerTabs').classList.remove('hidden');
-            document.getElementById('sunriseTabs').classList.add('hidden');
+            document.getElementById('locationSelectorWrapper').classList.remove('hidden');
             switchLocation('teriyaki');
         } else if(loggedInRole === 'sunrise') {
+            document.getElementById('locationSelectorWrapper').classList.remove('hidden');
             document.getElementById('ownerSection').classList.add('hidden');
-            document.getElementById('ownerTabs').classList.add('hidden');
-            document.getElementById('sunriseTabs').classList.remove('hidden'); // Show ONLY Sunrise controls
-            switchLocation('cherry'); // Default straight to Sunrise Social data structure
+            switchLocation('cherry');
         } else if(loggedInRole === 'teriyaki') {
+            document.getElementById('locationSelectorWrapper').classList.add('hidden');
             document.getElementById('ownerSection').classList.add('hidden');
-            document.getElementById('ownerTabs').classList.add('hidden');
-            document.getElementById('sunriseTabs').classList.add('hidden'); // Hide all location navigation completely
             switchLocation('teriyaki');
         }
     }
 
     function switchLocation(loc) {
-        // Strict guard clause: If sunrise manager tries to manually override location strings to Whitehall, block it instantly.
-        if(loggedInRole === 'sunrise' && loc === 'teriyaki') {
-            loc = 'cherry';
-        }
-
         currentActiveLoc = loc;
-
-        // Clear active styles on all tabs
-        document.getElementById('ownerLocBtn0').classList.remove('active');
-        document.getElementById('ownerLocBtn1').classList.remove('active');
-        document.getElementById('ownerLocBtn2').classList.remove('active');
-        document.getElementById('sunLocBtn1').classList.remove('active');
-        document.getElementById('sunLocBtn2').classList.remove('active');
+        document.getElementById('locBtn0').classList.remove('active');
+        document.getElementById('locBtn1').classList.remove('active');
+        document.getElementById('locBtn2').classList.remove('active');
         
-        // Match active CSS highlights dynamically
-        if(loc === 'teriyaki') document.getElementById('ownerLocBtn0').classList.add('active');
-        if(loc === 'cherry') {
-            document.getElementById('ownerLocBtn1').classList.add('active');
-            document.getElementById('sunLocBtn1').classList.add('active');
-        }
-        if(loc === 'philly') {
-            document.getElementById('ownerLocBtn2').classList.add('active');
-            document.getElementById('sunLocBtn2').classList.add('active');
-        }
+        if(loc === 'teriyaki') document.getElementById('locBtn0').classList.add('active');
+        if(loc === 'cherry') document.getElementById('locBtn1').classList.add('active');
+        if(loc === 'philly') document.getElementById('locBtn2').classList.add('active');
 
         if(loc === 'teriyaki') {
             document.getElementById('formTitle').innerText = "🍱 Teriyaki Madness (Whitehall) Report";
@@ -349,7 +327,11 @@
             }
         }
 
-        return { owed: netOwedToStaff, paid: actualPaidFromDrawer, payroll: balanceToPayroll };
+        return {
+            owed: netOwedToStaff,
+            paid: actualPaidFromDrawer,
+            payroll: balanceToPayroll
+        };
     }
 
     function liveCalcTips() {
@@ -384,6 +366,7 @@
         let foodPct = sales > 0 ? ((food / sales) * 100).toFixed(1) : 0;
 
         let tipMath = getTipSplitMath();
+
         let expectedEndingCash = opening - payout - tipMath.paid;
         let cashVariance = drawer - expectedEndingCash;
 
@@ -411,17 +394,27 @@
         localStorage.setItem('restaurant_logs', JSON.stringify(currentLogs));
 
         let managerAlertText = "✅ Daily report saved completely!\n\n";
+        
         if (Math.abs(cashVariance) > 1) {
             managerAlertText += "⚠️ CASH DISCREPANCY DETECTED: Based on yesterday's rollover, your drawer should have $" + expectedEndingCash.toFixed(2) + ", but you counted $" + drawer.toFixed(2) + ". A variance of $" + cashVariance.toFixed(2) + " has been logged for review.\n\n";
         }
+
         if(tipMath.payroll > 0) {
             managerAlertText += "ℹ️ TIP NOTICE: Drawer lacked funds to cover tips. $" + tipMath.payroll.toFixed(2) + " automatically moved to employee PAYCHECK payroll.\n\n";
         }
 
-        if (foodPct > 25) managerAlertText += "🚨 ALERT: Your Food Cost is high at " + foodPct + "% (Target is <=25%). You are ordering TOO MUCH food compared to recent sales!\n\n";
-        if (laborPct > 28) managerAlertText += "🚨 ALERT: Your Labor Cost is high at " + laborPct + "% (Target is <=28%). Check your staff schedules immediately!\n";
+        let budgetTriggered = false;
+        if (foodPct > 25) {
+            managerAlertText += "🚨 ALERT: Your Food Cost is high at " + foodPct + "% (Target is <=25%). You are ordering TOO MUCH food compared to recent sales!\n\n";
+            budgetTriggered = true;
+        }
+        if (laborPct > 28) {
+            managerAlertText += "🚨 ALERT: Your Labor Cost is high at " + laborPct + "% (Target is <=28%). Check your staff schedules immediately!\n";
+            budgetTriggered = true;
+        }
 
         alert(managerAlertText);
+
         document.getElementById('salesForm').reset();
         document.getElementById('reportDate').valueAsDate = new Date();
         switchLocation(currentActiveLoc); 
@@ -448,6 +441,7 @@
         if(loggedInRole === 'owner') renderHistory();
     }
 
+    // RENDRING ACTIVE LOG ENTRY TABLE DATA STRUCTURES
     function renderHistory() {
         let logs = JSON.parse(localStorage.getItem('restaurant_logs')) || [];
         let invoices = JSON.parse(localStorage.getItem('restaurant_invoices')) || [];
@@ -455,6 +449,7 @@
         
         let html = "<h4>Daily Operations Records</h4>";
         let filteredLogs = logs.filter(l => l.location === filter);
+        
         if(filteredLogs.length === 0) html += "<p style='font-size:0.85rem; color:grey;'>No entries recorded for this location yet.</p>";
         
         filteredLogs.forEach(l => {
