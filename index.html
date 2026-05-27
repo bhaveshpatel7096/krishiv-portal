@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Krishiv & Co. - Dashboard</title>
+    <style>
+        :root {
+            --primary: #C41E3A;
+            --primary-dark: #8B1A1A;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #212529;
+            --text-muted: #6c757d;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; }
+        header { background-color: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 500px; margin: 20px auto; padding: 0 15px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border-top: 4px solid var(--primary); }
+        .hidden { display: none !important; }
+        h3 { margin-bottom: 15px; color: var(--primary-dark); font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        
+        /* PIN PAD */
+        .pin-container { text-align: center; max-width: 300px; margin: 40px auto; }
+        .pin-display { background: #eee; padding: 15px; border-radius: 8px; font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 20px; min-height: 55px; font-weight: bold; }
+        .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .pin-btn { background: white; border: 1px solid #ccc; padding: 18px; font-size: 1.3rem; border-radius: 8px; cursor: pointer; font-weight: bold; touch-action: manipulation; }
+        .pin-btn:active { background: #eee; }
+        
+        /* FORMS */
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: #495057; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; font-size: 1rem; }
+        input:focus { border-color: var(--primary); outline: none; }
+        button.btn-block { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; font-size: 1rem; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button.btn-block:active { background: var(--primary-dark); }
+        
+        /* NAV & TAB TABS */
+        .nav-tabs { display: flex; gap: 5px; margin-bottom: 15px; background: #eee; padding: 4px; border-radius: 8px; }
+        .tab-btn { flex: 1; background: none; border: none; padding: 10px; font-size: 0.85rem; font-weight: bold; border-radius: 6px; cursor: pointer; color: var(--text-muted); }
+        .tab-btn.active { background: var(--primary); color: white; }
+        
+        .alert-badge { padding: 8px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 10px; color: white; }
+        .alert-success { background-color: var(--success); }
+        .alert-danger { background-color: var(--danger); }
+        
+        .history-row { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 0.85rem; border-left: 3px solid #ccc; position: relative;}
+        .delete-btn { position: absolute; right: 10px; top: 10px; color: var(--danger); background: none; border: none; font-weight: bold; cursor: pointer; }
+        .logout-btn { background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-size: 0.8rem; position: absolute; right: 10px; top: 10px; cursor: pointer; }
+        .img-preview { width: 100%; max-height: 150px; object-fit: contain; margin-top: 8px; border-radius: 4px; background: #eee; }
+    </style>
+</head>
+<body>
+
+<header>
+    Krishiv & Co. Portal
+    <button id="logoutBtn" class="logout-btn hidden" onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+    <div id="loginView" class="pin-container">
+        <label style="font-size: 1rem; margin-bottom: 10px;">Enter Your PIN Code</label>
+        <div id="pinDisplay" class="pin-display"></div>
+        <div class="pin-grid">
+            <button class="pin-btn" onclick="pressPin('1')">1</button>
+            <button class="pin-btn" onclick="pressPin('2')">2</button>
+            <button class="pin-btn" onclick="pressPin('3')">3</button>
+            <button class="pin-btn" onclick="pressPin('4')">4</button>
+            <button class="pin-btn" onclick="pressPin('5')">5</button>
+            <button class="pin-btn" onclick="pressPin('6')">6</button>
+            <button class="pin-btn" onclick="pressPin('7')">7</button>
+            <button class="pin-btn" onclick="pressPin('8')">8</button>
+            <button class="pin-btn" onclick="pressPin('9')">9</button>
+            <button class="pin-btn" onclick="clearPin()" style="color:var(--danger)">C</button>
+            <button class="pin-btn" onclick="pressPin('0')">0</button>
+            <button class="pin-btn" onclick="checkPin()" style="color:var(--success)">GO</button>
+        </div>
+    </div>
+
+    <div id="appView" class="hidden">
+        <div id="locationSelectorWrapper" class="nav-tabs hidden">
+            <button id="locBtn1" class="tab-btn active" onclick="switchLocation('cherry')">Cherry Hill</button>
+            <button id="locBtn2" class="tab-btn" onclick="switchLocation('philly')">Philly</button>
+        </div>
+
+        <div class="card">
+            <h3 id="formTitle">Daily Sales Summary</h3>
+            
+            <form id="salesForm" onsubmit="saveDailyReport(event)">
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="reportDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Gross/Net Sales ($)</label>
+                    <input type="number" step="0.01" id="salesAmount" required placeholder="0.00">
+                </div>
+
+                <div id="revelFields" class="hidden">
+                    <div class="form-group"><label>EZ Cater ($)</label><input type="number" step="0.01" id="ezCater" placeholder="0.00"></div>
+                    <div class="form-group"><label>Grubhub / Uber ($)</label><input type="number" step="0.01" id="grubhub" placeholder="0.00"></div>
+                    <div class="form-group"><label>Olo Online ($)</label><input type="number" step="0.01" id="olo" placeholder="0.00"></div>
+                </div>
+
+                <div id="toastFields" class="hidden">
+                    <div class="form-group"><label>Gratuity Collected ($)</label><input type="number" step="0.01" id="gratuity" placeholder="0.00"></div>
+                    <div class="form-group"><label>Closeout Cash ($)</label><input type="number" step="0.01" id="closeoutCash" placeholder="0.00"></div>
+                    <div class="form-group"><label>Owner.com Sales ($)</label><input type="number" step="0.01" id="ownerCom" placeholder="0.00"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Cash Paid Out From Store ($)</label>
+                    <input type="number" step="0.01" id="cashPayout" placeholder="0.00">
+                </div>
+
+                <h3 style="margin-top:20px; border-top: 1px dashed #ccc; padding-top:10px;">🍱 Daily Costs</h3>
+                <div class="form-group">
+                    <label>Daily Labor Cost Spent ($)</label>
+                    <input type="number" step="0.01" id="dailyLabor" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label>Daily Food/Delivery Order Spend ($)</label>
+                    <input type="number" step="0.01" id="dailyFood" required placeholder="0.00">
+                </div>
+
+                <button type="submit" class="btn-block">Save Entry</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>🧾 Upload Vendor Invoice</h3>
+            <form id="invoiceForm" onsubmit="saveInvoice(event)">
+                <div class="form-group">
+                    <label>Vendor Name</label>
+                    <input type="text" id="vendorName" required placeholder="Sysco, US Foods, Utility, etc.">
+                </div>
+                <div class="form-group">
+                    <label>Invoice Amount ($)</label>
+                    <input type="number" step="0.01" id="invoiceAmount" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="invoiceCategory">
+                        <option value="Food">Food & Beverage</option>
+                        <option value="Labor">Labor/Payout</option>
+                        <option value="Supplies">Supplies</option>
+                        <option value="Repairs">Repairs & Maintenance</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Other">Other Operating Expense</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Snap Photo / Upload Receipt</label>
+                    <input type="file" id="invoiceFile" accept="image/*,application/pdf" onchange="previewInvoiceImg(event)">
+                    <img id="invoicePreview" class="img-preview hidden" src="" alt="Preview">
+                </div>
+                <button type="submit" class="btn-block" style="background:#495057;">Log Invoice</button>
+            </form>
+        </div>
+
+        <div id="ownerSection" class="hidden">
+            <div class="card">
+                <h3>🏦 Bank Reconciliation (Owner Only)</h3>
+                <div class="form-group"><label>Actual Bank Cleared Balance ($)</label><input type="number" step="0.01" id="actualBank" placeholder="0.00" oninput="calcRecon()"></div>
+                <div class="form-group"><label>Prior Day Statement Balance ($)</label><input type="number" step="0.01" id="priorBank" placeholder="0.00" oninput="calcRecon()"></div>
+                <div id="reconResult" class="alert-badge alert-success" style="margin-top:10px; color:black; background:#eee;">Enter balances to match system math...</div>
+            </div>
+
+            <div class="card">
+                <h3>📜 30-Day Master Logs</h3>
+                <div class="form-group">
+                    <label>Filter View By Location</label>
+                    <select id="filterLoc" onchange="renderHistory()">
+                        <option value="teriyaki">Teriyaki Madness (Whitehall)</option>
+                        <option value="cherry">Sunrise Social (Cherry Hill)</option>
+                        <option value="philly">Sunrise Social (Philly)</option>
+                    </select>
+                </div>
+                <div id="historyLogs"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let currentPin = '';
+    let loggedInRole = ''; // 'owner', 'teriyaki', 'sunrise'
+    let currentActiveLoc = ''; // 'teriyaki', 'cherry', 'philly'
+    let uploadedImgData = '';
+
+    // Set today's date placeholder
+    document.getElementById('reportDate').valueAsDate = new Date();
+
+    function pressPin(num) {
+        if(currentPin.length < 4) {
+            currentPin += num;
+            document.getElementById('pinDisplay').innerText = '*'.repeat(currentPin.length);
+        }
+    }
+    function clearPin() {
+        currentPin = '';
+        document.getElementById('pinDisplay').innerText = '';
+    }
+    function checkPin() {
+        if(currentPin === '2540') {
+            loggedInRole = 'owner';
+            currentActiveLoc = 'teriyaki';
+            setupPortal();
+        } else if(currentPin === '6965') {
+            loggedInRole = 'teriyaki';
+            currentActiveLoc = 'teriyaki';
+            setupPortal();
+        } else if(currentPin === '1200') {
+            loggedInRole = 'sunrise';
+            currentActiveLoc = 'cherry'; // default
+            setupPortal();
+        } else {
+            alert('Invalid PIN Code. Please try again.');
+            clearPin();
+        }
+    }
+
+    function setupPortal() {
+        document.getElementById('loginView').classList.add('hidden');
+        document.getElementById('appView').classList.remove('hidden');
+        document.getElementById('logoutBtn').classList.remove('hidden');
+
+        // Layout adjusting rules
+        if(loggedInRole === 'owner') {
+            document.getElementById('ownerSection').classList.remove('hidden');
+            document.getElementById('locationSelectorWrapper').classList.remove('hidden');
+            switchLocation('teriyaki');
+        } else if(loggedInRole === 'sunrise') {
+            document.getElementById('locationSelectorWrapper').classList.remove('hidden');
+            document.getElementById('ownerSection').classList.add('hidden');
+            switchLocation('cherry');
+        } else if(loggedInRole === 'teriyaki') {
+            document.getElementById('locationSelectorWrapper').classList.add('hidden');
+            document.getElementById('ownerSection').classList.add('hidden');
+            switchLocation('teriyaki');
+        }
+    }
+
+    function switchLocation(loc) {
+        currentActiveLoc = loc;
+        
+        // Handle Active Button styling
+        document.getElementById('locBtn1').classList.remove('active');
+        document.getElementById('locBtn2').classList.remove('active');
+        
+        if(loc === 'cherry') document.getElementById('locBtn1').classList.add('active');
+        if(loc === 'philly') document.getElementById('locBtn2').classList.add('active');
+
+        // Form fields adjustment based on system
+        if(loc === 'teriyaki') {
+            document.getElementById('formTitle').innerText = "🍱 Teriyaki Madness (Whitehall) Report";
+            document.getElementById('revelFields').classList.remove('hidden');
+            document.getElementById('toastFields').classList.add('hidden');
+        } else {
+            let name = loc === 'cherry' ? "Cherry Hill" : "Philly";
+            document.getElementById('formTitle').innerText = "🍳 Sunrise Social (" + name + ") Report";
+            document.getElementById('revelFields').classList.add('hidden');
+            document.getElementById('toastFields').classList.remove('hidden');
+        }
+
+        if(loggedInRole === 'owner') {
+            renderHistory();
+        }
+    }
+
+    function previewInvoiceImg(e) {
+        let file = e.target.files[0];
+        let reader = new FileReader();
+        reader.onloadend = function() {
+            uploadedImgData = reader.result;
+            let preview = document.getElementById('invoicePreview');
+            preview.src = reader.result;
+            preview.classList.remove('hidden');
+        }
+        if(file) reader.readAsDataURL(file);
+    }
+
+    function saveDailyReport(e) {
+        e.preventDefault();
+        let sales = parseFloat(document.getElementById('salesAmount').value) || 0;
+        let labor = parseFloat(document.getElementById('dailyLabor').value) || 0;
+        let food = parseFloat(document.getElementById('dailyFood').value) || 0;
+        
+        let laborPct = sales > 0 ? ((labor / sales) * 100).toFixed(1) : 0;
+        let foodPct = sales > 0 ? ((food / sales) * 100).toFixed(1) : 0;
+
+        let entry = {
+            id: Date.now(),
+            location: currentActiveLoc,
+            date: document.getElementById('reportDate').value,
+            sales: sales,
+            labor: labor,
+            food: food,
+            laborPct: laborPct,
+            foodPct: foodPct,
+            payout: parseFloat(document.getElementById('cashPayout').value) || 0
+        };
+
+        let currentLogs = JSON.parse(localStorage.getItem('restaurant_logs')) || [];
+        currentLogs.unshift(entry);
+        localStorage.setItem('restaurant_logs', JSON.stringify(currentLogs));
+
+        // Immediate visual alert feedback targets
+        let alertMsg = "Data saved completely! ";
+        if(laborPct > 28) alertMsg += "⚠️ WARNING: Labor cost (" + laborPct + "%) is over your 28% threshold! ";
+        if(foodPct > 25) alertMsg += "⚠️ WARNING: Food cost (" + foodPct + "%) is over your 25% threshold! ";
+        
+        alert(alertMsg);
+        document.getElementById('salesForm').reset();
+        document.getElementById('reportDate').valueAsDate = new Date();
+        if(loggedInRole === 'owner') renderHistory();
+    }
+
+    function saveInvoice(e) {
+        e.preventDefault();
+        let inv = {
+            id: Date.now(),
+            location: currentActiveLoc,
+            vendor: document.getElementById('vendorName').value,
+            amount: parseFloat(document.getElementById('invoiceAmount').value) || 0,
+            category: document.getElementById('invoiceCategory').value,
+            img: uploadedImgData
+        };
+        let currentInvoices = JSON.parse(localStorage.getItem('restaurant_invoices')) || [];
+        currentInvoices.unshift(inv);
+        localStorage.setItem('restaurant_invoices', JSON.stringify(currentInvoices));
+
+        alert("Invoice logged safely!");
+        document.getElementById('invoiceForm').reset();
+        document.getElementById('invoicePreview').classList.add('hidden');
+        uploadedImgData = '';
+        if(loggedInRole === 'owner') renderHistory();
+    }
+
+    function renderHistory() {
+        let logs = JSON.parse(localStorage.getItem('restaurant_logs')) || [];
+        let invoices = JSON.parse(localStorage.getItem('restaurant_invoices')) || [];
+        let filter = document.getElementById('filterLoc').value;
+        
+        let html = "<h4>Daily Records</h4>";
+        let filteredLogs = logs.filter(l => l.location === filter);
+        
+        if(filteredLogs.length === 0) html += "<p style='font-size:0.85rem; color:grey;'>No entries recorded for this location yet.</p>";
+        
+        filteredLogs.forEach(l => {
+            let laborColor = l.laborPct > 28 ? 'color:var(--danger);font-weight:bold;' : 'color:var(--success);';
+            let foodColor = l.foodPct > 25 ? 'color:var(--danger);font-weight:bold;' : 'color:var(--success);';
+            
+            html += "<div class='history-row'>";
+            html += "<button class='delete-btn' onclick='deleteLog(" + l.id + ")'>X</button>";
+            html += "<strong>" + l.date + "</strong><br>";
+            html += "Sales: $" + l.sales.toFixed(2) + " | Payouts: $" + l.payout.toFixed(2) + "<br>";
+            html += "Labor: <span style='" + laborColor + "'>" + l.laborPct + "%</span> | Food: <span style='" + foodColor + "'>" + l.foodPct + "%</span>";
+            html += "</div>";
+        });
+
+        html += "<h4 style='margin-top:15px;'>Logged Invoices</h4>";
+        let filteredInvs = invoices.filter(i => i.location === filter);
+        if(filteredInvs.length === 0) html += "<p style='font-size:0.85rem; color:grey;'>No invoices tracked.</p>";
+        
+        filteredInvs.forEach(i => {
+            html += "<div class='history-row' style='border-left-color: #495057;'>";
+            html += "<button class='delete-btn' onclick='deleteInvoice(" + i.id + ")'>X</button>";
+            html += "<strong>" + i.vendor + "</strong> (" + i.category + ")<br>Amount: $" + i.amount.toFixed(2);
+            if(i.img) {
+                html += "<br><img src='" + i.img + "' style='width:60px;height:40px;object-fit:cover;margin-top:5px;border:1px solid #ccc;'>";
+            }
+            html += "</div>";
+        });
+
+        document.getElementById('historyLogs').innerHTML = html;
+        calcRecon();
+    }
+
+    function deleteLog(id) {
+        if(confirm("Delete daily item?")) {
+            let logs = JSON.parse(localStorage.getItem('restaurant_logs')) || [];
+            logs = logs.filter(l => l.id !== id);
+            localStorage.setItem('restaurant_logs', JSON.stringify(logs));
+            renderHistory();
+        }
+    }
+
+    function deleteInvoice(id) {
+        if(confirm("Delete logged invoice?")) {
+            let invoices = JSON.parse(localStorage.getItem('restaurant_invoices')) || [];
+            invoices = invoices.filter(i => i.id !== id);
+            localStorage.setItem('restaurant_invoices', JSON.stringify(invoices));
+            renderHistory();
+        }
+    }
+
+    function calcRecon() {
+        let logs = JSON.parse(localStorage.getItem('restaurant_logs')) || [];
+        let filter = document.getElementById('filterLoc').value;
+        let todayLog = logs.find(l => l.location === filter);
+        
+        let actual = parseFloat(document.getElementById('actualBank').value) || 0;
+        let prior = parseFloat(document.getElementById('priorBank').value) || 0;
+        let change = actual - prior;
+
+        if(!todayLog) {
+            document.getElementById('reconResult').className = "alert-badge alert-danger";
+            document.getElementById('reconResult').innerText = "Log today's sales report first before evaluating.";
+            return;
+        }
+
+        let expected = todayLog.sales - todayLog.payout;
+        let variance = change - expected;
+
+        let el = document.getElementById('reconResult');
+        if(Math.abs(variance) < 5) {
+            el.className = "alert-badge alert-success";
+            el.innerText = "Balanced! Bank movement reflects daily operations variance ($" + variance.toFixed(2) + ")";
+        } else {
+            el.className = "alert-badge alert-danger";
+            el.innerText = "Mismatch: Gap of $" + variance.toFixed(2) + " identified between system activity vs bank entries.";
+        }
+    }
+
+    function logout() {
+        loggedInRole = '';
+        currentActiveLoc = '';
+        currentPin = '';
+        document.getElementById('pinDisplay').innerText = '';
+        document.getElementById('loginView').classList.remove('hidden');
+        document.getElementById('appView').classList.add('hidden');
+        document.getElementById('logoutBtn').classList.add('hidden');
+    }
+</script>
+</body>
+</html>
