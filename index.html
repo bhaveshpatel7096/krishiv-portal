@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Krishiv & Co. - Dashboard</title>
+    <title>Krishiv & Co. - Enterprise Portal</title>
     <style>
         :root {
             --primary: #C41E3A;
@@ -15,10 +15,11 @@
             --success: #28a745;
             --warning: #ffc107;
             --danger: #dc3545;
+            --info: #17a2b8;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; }
-        header { background-color: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        header { background-color: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
         .container { max-width: 500px; margin: 20px auto; padding: 0 15px; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border-top: 4px solid var(--primary); }
         .hidden { display: none !important; }
@@ -26,7 +27,7 @@
         
         /* PIN PAD */
         .pin-container { text-align: center; max-width: 300px; margin: 40px auto; }
-        .pin-display { background: #eee; padding: 15px; border-radius: 8px; font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 20px; min-height: 55px; font-weight: bold; }
+        .pin-display { background: #eee; padding: 15px; border-radius: 8px; font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 20px; min-height: 55px; font-weight: bold; line-height: 25px; }
         .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .pin-btn { background: white; border: 1px solid #ccc; padding: 18px; font-size: 1.3rem; border-radius: 8px; cursor: pointer; font-weight: bold; touch-action: manipulation; }
         .pin-btn:active { background: #eee; }
@@ -39,7 +40,7 @@
         button.btn-block { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; font-size: 1rem; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button.btn-block:active { background: var(--primary-dark); }
         
-        /* NAV & TAB TABS */
+        /* NAV TABS */
         .nav-tabs { display: flex; gap: 5px; margin-bottom: 15px; background: #eee; padding: 4px; border-radius: 8px; }
         .tab-btn { flex: 1; background: none; border: none; padding: 10px; font-size: 0.85rem; font-weight: bold; border-radius: 6px; cursor: pointer; color: var(--text-muted); }
         .tab-btn.active { background: var(--primary); color: white; }
@@ -52,6 +53,9 @@
         .delete-btn { position: absolute; right: 10px; top: 10px; color: var(--danger); background: none; border: none; font-weight: bold; cursor: pointer; }
         .logout-btn { background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-size: 0.8rem; position: absolute; right: 10px; top: 10px; cursor: pointer; }
         .img-preview { width: 100%; max-height: 150px; object-fit: contain; margin-top: 8px; border-radius: 4px; background: #eee; }
+        
+        .tip-box { background: #f1f3f5; padding: 12px; border-radius: 8px; margin-top: 10px; border: 1px solid #dee2e6; }
+        .tip-calc-title { font-size: 0.85rem; font-weight: bold; color: #495057; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
@@ -83,21 +87,21 @@
 
     <div id="appView" class="hidden">
         <div id="locationSelectorWrapper" class="nav-tabs hidden">
-            <button id="locBtn1" class="tab-btn active" onclick="switchLocation('cherry')">Cherry Hill</button>
+            <button id="locBtn0" class="tab-btn active" onclick="switchLocation('teriyaki')">Whitehall</button>
+            <button id="locBtn1" class="tab-btn" onclick="switchLocation('cherry')">Cherry Hill</button>
             <button id="locBtn2" class="tab-btn" onclick="switchLocation('philly')">Philly</button>
         </div>
 
         <div class="card">
             <h3 id="formTitle">Daily Sales Summary</h3>
-            
             <form id="salesForm" onsubmit="saveDailyReport(event)">
                 <div class="form-group">
                     <label>Date</label>
                     <input type="date" id="reportDate" required>
                 </div>
                 <div class="form-group">
-                    <label>Gross/Net Sales ($)</label>
-                    <input type="number" step="0.01" id="salesAmount" required placeholder="0.00">
+                    <label>Net Sales ($)</label>
+                    <input type="number" step="0.01" id="salesAmount" required placeholder="0.00" oninput="liveCalcTips()">
                 </div>
 
                 <div id="revelFields" class="hidden">
@@ -113,11 +117,36 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Cash Paid Out From Store ($)</label>
+                    <label>Cash Paid Out From Store Drawer ($)</label>
                     <input type="number" step="0.01" id="cashPayout" placeholder="0.00">
                 </div>
 
-                <h3 style="margin-top:20px; border-top: 1px dashed #ccc; padding-top:10px;">🍱 Daily Costs</h3>
+                <h3 style="margin-top:20px; border-top: 1px dashed #ccc; padding-top:10px;">💳 Tips & Cash Breakdowns</h3>
+                <div class="form-group">
+                    <label>Yesterday's Rollover Cash (Auto-Detected) ($)</label>
+                    <input type="number" step="0.01" id="openingCash" placeholder="0.00" style="background-color:#e9ecef; font-weight:bold;" oninput="liveCalcTips()">
+                </div>
+                <div class="form-group">
+                    <label>Total Credit Card Tips ($)</label>
+                    <input type="number" step="0.01" id="ccTips" placeholder="0.00" oninput="liveCalcTips()">
+                </div>
+                <div class="form-group">
+                    <label>Total Cash Tips Collected ($)</label>
+                    <input type="number" step="0.01" id="cashTips" placeholder="0.00" oninput="liveCalcTips()">
+                </div>
+                <div class="form-group">
+                    <label>Physical Cash Counted in Drawer at Close ($)</label>
+                    <input type="number" step="0.01" id="drawerCash" placeholder="0.00" oninput="liveCalcTips()">
+                </div>
+
+                <div class="tip-box">
+                    <div class="tip-calc-title">System Allocation Auto-Math:</div>
+                    <div style="font-size:0.85rem; margin-bottom:4px;">Net Tips Owed to Team: <strong id="lblNetOwed">$0.00</strong></div>
+                    <div style="font-size:0.85rem; margin-bottom:4px; color: var(--success);">Paid to Team from Drawer Cash: <strong id="lblPaidCash">$0.00</strong></div>
+                    <div style="font-size:0.85rem; color: var(--danger); font-weight: bold;">Shortage (Move to Paycheck Payroll): <strong id="lblToPayroll">$0.00</strong></div>
+                </div>
+
+                <h3 style="margin-top:20px; border-top: 1px dashed #ccc; padding-top:10px;">🍱 Daily Budgets</h3>
                 <div class="form-group">
                     <label>Daily Labor Cost Spent ($)</label>
                     <input type="number" step="0.01" id="dailyLabor" required placeholder="0.00">
@@ -136,7 +165,7 @@
             <form id="invoiceForm" onsubmit="saveInvoice(event)">
                 <div class="form-group">
                     <label>Vendor Name</label>
-                    <input type="text" id="vendorName" required placeholder="Sysco, US Foods, Utility, etc.">
+                    <input type="text" id="vendorName" required placeholder="Sysco, US Foods, etc.">
                 </div>
                 <div class="form-group">
                     <label>Invoice Amount ($)</label>
@@ -189,11 +218,10 @@
 
 <script>
     let currentPin = '';
-    let loggedInRole = ''; // 'owner', 'teriyaki', 'sunrise'
-    let currentActiveLoc = ''; // 'teriyaki', 'cherry', 'philly'
+    let loggedInRole = ''; 
+    let currentActiveLoc = ''; 
     let uploadedImgData = '';
 
-    // Set today's date placeholder
     document.getElementById('reportDate').valueAsDate = new Date();
 
     function pressPin(num) {
@@ -207,7 +235,7 @@
         document.getElementById('pinDisplay').innerText = '';
     }
     function checkPin() {
-        if(currentPin === '2540') {
+        if(currentPin === '2545') {
             loggedInRole = 'owner';
             currentActiveLoc = 'teriyaki';
             setupPortal();
@@ -217,7 +245,7 @@
             setupPortal();
         } else if(currentPin === '1200') {
             loggedInRole = 'sunrise';
-            currentActiveLoc = 'cherry'; // default
+            currentActiveLoc = 'cherry'; 
             setupPortal();
         } else {
             alert('Invalid PIN Code. Please try again.');
@@ -230,7 +258,6 @@
         document.getElementById('appView').classList.remove('hidden');
         document.getElementById('logoutBtn').classList.remove('hidden');
 
-        // Layout adjusting rules
         if(loggedInRole === 'owner') {
             document.getElementById('ownerSection').classList.remove('hidden');
             document.getElementById('locationSelectorWrapper').classList.remove('hidden');
@@ -248,15 +275,14 @@
 
     function switchLocation(loc) {
         currentActiveLoc = loc;
-        
-        // Handle Active Button styling
+        document.getElementById('locBtn0').classList.remove('active');
         document.getElementById('locBtn1').classList.remove('active');
         document.getElementById('locBtn2').classList.remove('active');
         
+        if(loc === 'teriyaki') document.getElementById('locBtn0').classList.add('active');
         if(loc === 'cherry') document.getElementById('locBtn1').classList.add('active');
         if(loc === 'philly') document.getElementById('locBtn2').classList.add('active');
 
-        // Form fields adjustment based on system
         if(loc === 'teriyaki') {
             document.getElementById('formTitle').innerText = "🍱 Teriyaki Madness (Whitehall) Report";
             document.getElementById('revelFields').classList.remove('hidden');
@@ -268,9 +294,51 @@
             document.getElementById('toastFields').classList.remove('hidden');
         }
 
+        let logs = JSON.parse(localStorage.getItem('restaurant_logs')) || [];
+        let matchingLogs = logs.filter(l => l.location === currentActiveLoc);
+        if (matchingLogs.length > 0) {
+            document.getElementById('openingCash').value = matchingLogs[0].drawerCash.toFixed(2);
+        } else {
+            document.getElementById('openingCash').value = "300.00"; 
+        }
+
+        liveCalcTips();
         if(loggedInRole === 'owner') {
             renderHistory();
         }
+    }
+
+    function getTipSplitMath() {
+        let ccTips = parseFloat(document.getElementById('ccTips').value) || 0;
+        let cashTips = parseFloat(document.getElementById('cashTips').value) || 0;
+        let drawerCash = parseFloat(document.getElementById('drawerCash').value) || 0;
+
+        let netOwedToStaff = ccTips - cashTips; 
+        let actualPaidFromDrawer = 0;
+        let balanceToPayroll = 0;
+
+        if (netOwedToStaff > 0) {
+            if (drawerCash >= netOwedToStaff) {
+                actualPaidFromDrawer = netOwedToStaff;
+                balanceToPayroll = 0;
+            } else {
+                actualPaidFromDrawer = drawerCash > 0 ? drawerCash : 0;
+                balanceToPayroll = netOwedToStaff - actualPaidFromDrawer;
+            }
+        }
+
+        return {
+            owed: netOwedToStaff,
+            paid: actualPaidFromDrawer,
+            payroll: balanceToPayroll
+        };
+    }
+
+    function liveCalcTips() {
+        let math = getTipSplitMath();
+        document.getElementById('lblNetOwed').innerText = "$" + (math.owed > 0 ? math.owed.toFixed(2) : "0.00");
+        document.getElementById('lblPaidCash').innerText = "$" + math.paid.toFixed(2);
+        document.getElementById('lblToPayroll').innerText = "$" + math.payroll.toFixed(2);
     }
 
     function previewInvoiceImg(e) {
@@ -290,9 +358,17 @@
         let sales = parseFloat(document.getElementById('salesAmount').value) || 0;
         let labor = parseFloat(document.getElementById('dailyLabor').value) || 0;
         let food = parseFloat(document.getElementById('dailyFood').value) || 0;
+        let opening = parseFloat(document.getElementById('openingCash').value) || 0;
+        let payout = parseFloat(document.getElementById('cashPayout').value) || 0;
+        let drawer = parseFloat(document.getElementById('drawerCash').value) || 0;
         
         let laborPct = sales > 0 ? ((labor / sales) * 100).toFixed(1) : 0;
         let foodPct = sales > 0 ? ((food / sales) * 100).toFixed(1) : 0;
+
+        let tipMath = getTipSplitMath();
+
+        let expectedEndingCash = opening - payout - tipMath.paid;
+        let cashVariance = drawer - expectedEndingCash;
 
         let entry = {
             id: Date.now(),
@@ -301,24 +377,47 @@
             sales: sales,
             labor: labor,
             food: food,
-            laborPct: laborPct,
-            foodPct: foodPct,
-            payout: parseFloat(document.getElementById('cashPayout').value) || 0
+            laborPct: Number(laborPct),
+            foodPct: Number(foodPct),
+            payout: payout,
+            openingCash: opening,
+            ccTips: parseFloat(document.getElementById('ccTips').value) || 0,
+            cashTips: parseFloat(document.getElementById('cashTips').value) || 0,
+            drawerCash: drawer,
+            paidTipsFromDrawer: tipMath.paid,
+            tipsToPayroll: tipMath.payroll,
+            cashVariance: cashVariance
         };
 
         let currentLogs = JSON.parse(localStorage.getItem('restaurant_logs')) || [];
         currentLogs.unshift(entry);
         localStorage.setItem('restaurant_logs', JSON.stringify(currentLogs));
 
-        // Immediate visual alert feedback targets
-        let alertMsg = "Data saved completely! ";
-        if(laborPct > 28) alertMsg += "⚠️ WARNING: Labor cost (" + laborPct + "%) is over your 28% threshold! ";
-        if(foodPct > 25) alertMsg += "⚠️ WARNING: Food cost (" + foodPct + "%) is over your 25% threshold! ";
+        let managerAlertText = "✅ Daily report saved completely!\n\n";
         
-        alert(alertMsg);
+        if (Math.abs(cashVariance) > 1) {
+            managerAlertText += "⚠️ CASH DISCREPANCY DETECTED: Based on yesterday's rollover, your drawer should have $" + expectedEndingCash.toFixed(2) + ", but you counted $" + drawer.toFixed(2) + ". A variance of $" + cashVariance.toFixed(2) + " has been logged for review.\n\n";
+        }
+
+        if(tipMath.payroll > 0) {
+            managerAlertText += "ℹ️ TIP NOTICE: Drawer lacked funds to cover tips. $" + tipMath.payroll.toFixed(2) + " automatically moved to employee PAYCHECK payroll.\n\n";
+        }
+
+        let budgetTriggered = false;
+        if (foodPct > 25) {
+            managerAlertText += "🚨 ALERT: Your Food Cost is high at " + foodPct + "% (Target is <=25%). You are ordering TOO MUCH food compared to recent sales!\n\n";
+            budgetTriggered = true;
+        }
+        if (laborPct > 28) {
+            managerAlertText += "🚨 ALERT: Your Labor Cost is high at " + laborPct + "% (Target is <=28%). Check your staff schedules immediately!\n";
+            budgetTriggered = true;
+        }
+
+        alert(managerAlertText);
+
         document.getElementById('salesForm').reset();
         document.getElementById('reportDate').valueAsDate = new Date();
-        if(loggedInRole === 'owner') renderHistory();
+        switchLocation(currentActiveLoc); 
     }
 
     function saveInvoice(e) {
@@ -342,25 +441,49 @@
         if(loggedInRole === 'owner') renderHistory();
     }
 
+    // RENDRING ACTIVE LOG ENTRY TABLE DATA STRUCTURES
     function renderHistory() {
         let logs = JSON.parse(localStorage.getItem('restaurant_logs')) || [];
         let invoices = JSON.parse(localStorage.getItem('restaurant_invoices')) || [];
         let filter = document.getElementById('filterLoc').value;
         
-        let html = "<h4>Daily Records</h4>";
+        let html = "<h4>Daily Operations Records</h4>";
         let filteredLogs = logs.filter(l => l.location === filter);
         
         if(filteredLogs.length === 0) html += "<p style='font-size:0.85rem; color:grey;'>No entries recorded for this location yet.</p>";
         
         filteredLogs.forEach(l => {
-            let laborColor = l.laborPct > 28 ? 'color:var(--danger);font-weight:bold;' : 'color:var(--success);';
-            let foodColor = l.foodPct > 25 ? 'color:var(--danger);font-weight:bold;' : 'color:var(--success);';
+            let rowStyle = "";
+            let laborColor = 'color:var(--success);';
+            let foodColor = 'color:var(--success);';
             
-            html += "<div class='history-row'>";
+            if(l.laborPct > 28 || l.foodPct > 25 || Math.abs(l.cashVariance || 0) > 2) {
+                rowStyle = "border-left: 4px solid var(--danger); background: #fff5f5;";
+            } else {
+                rowStyle = "border-left: 4px solid var(--success);";
+            }
+            
+            if(l.laborPct > 28) laborColor = 'color:var(--danger); font-weight:bold;';
+            if(l.foodPct > 25) foodColor = 'color:var(--danger); font-weight:bold;';
+            
+            let payrollAmt = l.tipsToPayroll || 0;
+            let paidCashAmt = l.paidTipsFromDrawer || 0;
+            let varianceAmt = l.cashVariance || 0;
+
+            html += "<div class='history-row' style='" + rowStyle + "'>";
             html += "<button class='delete-btn' onclick='deleteLog(" + l.id + ")'>X</button>";
             html += "<strong>" + l.date + "</strong><br>";
-            html += "Sales: $" + l.sales.toFixed(2) + " | Payouts: $" + l.payout.toFixed(2) + "<br>";
-            html += "Labor: <span style='" + laborColor + "'>" + l.laborPct + "%</span> | Food: <span style='" + foodColor + "'>" + l.foodPct + "%</span>";
+            html += "Sales: $" + l.sales.toFixed(2) + " | Store Payouts: $" + l.payout.toFixed(2) + "<br>";
+            html += "Labor: <span style='" + laborColor + "'>" + l.laborPct + "%</span> | Food: <span style='" + foodColor + "'>" + l.foodPct + "%</span><br>";
+            
+            if (Math.abs(varianceAmt) > 1) {
+                let vColor = varianceAmt < 0 ? 'color:var(--danger); font-weight:bold;' : 'color:var(--info); font-weight:bold;';
+                html += "⚠️ Cash Drift: <span style='" + vColor + "'>$" + varianceAmt.toFixed(2) + "</span><br>";
+            }
+
+            html += "<span style='color:#495057; font-size:0.8rem; background:#e9ecef; padding:2px 5px; border-radius:4px; display:inline-block; margin-top:4px;'>";
+            html += "Paid Cash Tips: $" + paidCashAmt.toFixed(2) + " | 🗓️ <strong>To Payroll: $" + payrollAmt.toFixed(2) + "</strong>";
+            html += "</span>";
             html += "</div>";
         });
 
